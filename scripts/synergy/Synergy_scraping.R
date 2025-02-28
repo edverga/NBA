@@ -83,17 +83,6 @@ download_nba_synergy_data <- function(start_season = 2015, end_season = 2024) {
   return(final_df)
 }
 
-
-
-final_df=final_df%>%
-  retype()%>%
-  clean_names()
-
-final_df$season <- paste0(
-  as.integer(substr(final_df$season_id, 4, 5)) + 2000, "-",
-  sprintf("%02d", (as.integer(substr(final_df$season_id, 4, 5)) + 1) %% 100)
-)
-
 dunks_data <- download_nba_synergy_data(start_season = 2015, end_season = 2024)
 
 write.csv(dunks_data, file = file.path("~/Coding/NBA/scripts/synergy", "synergy_data.csv"), row.names = FALSE)
