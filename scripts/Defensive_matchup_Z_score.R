@@ -8,7 +8,6 @@ library(hablar) # package for formatting numbers and other values with Spanish c
 library(writexl)
 library(ggrepel)
 library(ggtext)
-#install.packages("dineq")
 library(dineq)
 library(data.table)
 library(sysfonts)
@@ -20,7 +19,6 @@ library(cropcircles)
 library(dplyr)
 library(ggimage)
 library(magick)
-install.packages('devtools')
 
 devtools::install_github("abresler/nbastatR")
 
@@ -36,6 +34,7 @@ theme_ev <- function () {
       plot.background = element_rect(fill = '#efe8e8', color = '#efe8e8')
     )
 }
+
 # Set environment variable for the API request
 Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
 
@@ -197,120 +196,3 @@ min_df <- min_df %>%
          img = glue::glue("https://cdn.nba.com/headshots/nba/latest/1040x760/{def_player_id}.png"))
 
 
-library(magick)
-library(dplyr)
-library(purrr)
-
-# Load NBA player data
-image_df <- nba_players() %>% 
-  select(idPlayer, urlPlayerHeadshot)
-
-# Get distinct player IDs
-ids <- min_df %>% 
-  distinct(def_player_id)
-
-# Merge player images with IDs
-image_df <- merge(ids, image_df, by.x = "def_player_id", by.y = "idPlayer")
-
-# Process images
-image_df <- image_df %>% 
-  rowwise() %>% 
-  mutate(
-    # Read original image
-    original_img = list(image_read(urlPlayerHeadshot)),
-    # Black and white conversion
-    bnw_img = list(image_quantize(original_img, colorspace = 'gray')),
-    # Save black and white image
-    bnw_img_path = paste0(def_player_id, "_bnw.png"),
-    rgb_img_path = paste0(def_player_id, "_rgb.png")
-  )
-
-# Save processed images using pwalk
-pwalk(
-  list(image_df$bnw_img, image_df$bnw_img_path),
-  ~image_write(..1, path = ..2, format = "png")
-)
-
-pwalk(
-  list(image_df$original_img, image_df$rgb_img_path),
-  ~image_write(..1, path = ..2, format = "png")
-)
-
-# Merge with min_df
-df <- merge(min_df, image_df, by = "def_player_id")
-
-# Apply gray border and black-and-white images for general players
-df <- df %>% 
-  mutate(bnw = circle_crop(bnw_img_path, border_size = 1, border_colour = "#A9A9A9"))
-
-# Highlight top "hard" players with red border and colored images
-hard <- df %>% 
-  top_n(10, mean_z) %>% 
-  mutate(bnw = circle_crop(rgb_img_path, border_size = 1, border_colour = "#D2042D"))
-
-# Highlight top "good" players with blue border and colored images
-good <- df %>% 
-  top_n(10, -efg_pct) %>% 
-  mutate(bnw = circle_crop(rgb_img_path, border_size = 1, border_colour = "#12086F"))
-
-# Weighted eFG% calculation
-weighted_efg_avg <- weighted.mean(min_df$efg_pct, min_df$tot_fga)
-
-df%>%
-  ggplot(aes(x=mean_z,
-             y=efg_pct)) +
-  geom_hline(yintercept=weighted_efg_avg, linetype="dashed", size=.5, alpha=.3, color="#89162D")+
-  geom_image(data = df, aes(image = bnw),
-             size = 0.04, asp = 1
-  )+
-  geom_image(data = hard, aes(image = bnw),
-             size = 0.06, asp = 1
-  )+
-  geom_image(data = good, aes(image = bnw),
-             size = 0.06, asp = 1
-  )+
-  scale_y_reverse()+
-  #geom_point(data=first_df, aes(color="#04D2A9"),size=2.5, alpha=1)+
-  #geom_point(data=second_df, aes(color="#1660D6"),size=2.5, alpha=1)+
-  #geom_point(data=difficult_df, aes(color="#D68C16"),size=2, alpha=1)+
-  #geom_point(data=lowefg_df, aes(color="#D2042D"),size=2, alpha=1)+
-  #geom_text_repel(data=first_df, aes(label=short_name), color="#D2042D", family="Archivo", face="bold", segment.size = .125, size = 4, max.overlaps = 8)+
-  #geom_text_repel(data=second_df, aes(label=short_name), color="#006600", family="Archivo", face="bold", segment.size = .125, size = 4,  max.overlaps = 3)+
-  #geom_text_repel(data=difficult_df, aes(label=short_name), color="#1660D6", family="Archivo", segment.size = .125, size = 2.5,  max.overlaps = 3)+
-  #geom_text_repel(data=lowefg_df, aes(label=short_name), color="#D68C16", family="Archivo", segment.size = .125, size = 2.5, max.overlaps = 3)+
-  #scale_y_continuous(limits = c(46.6, 61.9), breaks = seq(45, 75, 5)) +
-  #scale_x_continuous(limits = c(-1.03, 1.865), breaks = seq(-2.5, 2.5, 0.5)) +
-  theme_ev()+
-  #scale_color_manual(name="",values=c("#D2042D", "#006600", "#D68C16", "#1660D6"), labels=c("All-Defensive First", "All-Defensive Second", "Low opponent eFG%", "Difficult matchups")) +
-  theme(plot.title = element_text(size = 75, face="bold", hjust=0.5), 
-        plot.subtitle = element_text(size = 33, hjust=0.5), 
-        plot.caption = element_text(color = 'gray40', size=30), 
-        plot.margin = margin(15, 15, 15, 15), 
-        strip.text.x = element_text(size = 50),
-        axis.text.x = element_text(size = 45),
-        axis.text.y = element_text(size = 45),
-        strip.background = element_blank(),
-        axis.title.x=element_text(size=45, face="italic", margin=margin(t=5)),
-        axis.title.y=element_text(size=45, face="italic", margin=margin(r=5)),
-        axis.ticks.y = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = c(0.85, 0.87),
-        legend.title=element_blank(),
-        legend.text = element_text(colour="black", size=38, 
-                                   face="bold"),
-        legend.background = element_rect(fill="#EFECE8", size=0.5, linetype="solid")) +
-  geom_richtext(aes(x = 1.5, y = 60,
-                    label = "<b style='color:#89162D;'>DIFFICULT MATCHUP</b>"),
-                stat = "unique", family = "Archivo",
-                size = 18, color = "#89162D")+
-  geom_richtext(aes(x = 0.5, y = 42.5 ,
-                    label = "<b style='color:#12086F;'>LOW OPPONENT eFG% WHEN GUARDED BY PLAYER</b>"),
-                stat = "unique", family = "Archivo",
-                size = 18, color = "#12086F")+
-  labs(title = "Average matchup difficulty and opponent eFG%",
-       subtitle = "Matchup difficulty is a z-score based on opponent weighted average of TS%, USG% and FGA/G. Data from 2024/25 NBA Regular Season.", 
-       x = "MATCHUP DIFFICULTY", 
-       y = "OPPONENT eFG% W/ GUARDED BY PLAYER", 
-       caption = "@ed_vergani | nba.com/stats")
-
-ggsave("defense_table.png", width = 8, height = 8, dpi = 400, type = 'cairo')
