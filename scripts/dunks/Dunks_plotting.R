@@ -9,6 +9,15 @@ library(nbastatR)    # For fetching NBA player data (nba_players)
 library(scales)      # For color scales in tables (scales::col_numeric)
 library(ggtext)      # For markdown text formatting (md())
 
+#My custom theme for the plot
+theme_ev <- function () { 
+  theme_minimal(base_size=9, base_family="Archivo") 
+  theme(panel.grid = element_line(color = "#afa9a9"),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = '#efe8e8', color = '#efe8e8')
+  )
+}
+
 dunks <- read.csv("~/Coding/NBA/scripts/dunks/dunks_data.csv")
 
 vertical <- dunks %>%

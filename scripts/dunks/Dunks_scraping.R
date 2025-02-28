@@ -6,15 +6,6 @@ library(ggplot2)
 library(vroom)
 library(hablar)
 
-#My custom theme for the plot
-theme_ev <- function () { 
-  theme_minimal(base_size=9, base_family="Archivo") %+replace% 
-    theme(panel.grid = element_line(color = "#afa9a9"),
-          panel.grid.minor = element_blank(),
-          plot.background = element_rect(fill = '#efe8e8', color = '#efe8e8')
-    )
-}
-
 #Headers needed to scrape from the NBA website
 headers = c(
   `Connection` = 'keep-alive',
