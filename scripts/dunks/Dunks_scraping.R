@@ -6,7 +6,7 @@ library(vroom)
 library(hablar)
 
 # Function to scrape NBA dunk score leaders
-download_nba_dunks <- function(season = "2024-25", season_type = "Regular Season", output_path = "~/Coding/NBA/scripts/dunks/dunks_data.csv") {
+download_nba_dunks <- function(season = "2024-25", season_type = "Regular Season") {
   
   # Headers needed to scrape from the NBA website
   headers <- c(
