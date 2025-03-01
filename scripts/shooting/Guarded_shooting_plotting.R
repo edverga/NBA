@@ -18,24 +18,15 @@ theme_ev <- function () {
   )
 }
 
-dunks <- read.csv("~/Coding/NBA/scripts/dunks/dunks_data.csv")
-
-vertical <- dunks %>%
-  group_by(player_name, player_id) %>%
-  summarise(
-    dunks = n(),
-    avg_player_vertical = mean(player_vertical, na.rm = TRUE),
-    avg_hang = mean(hang_time, , na.rm = TRUE),
-    avg_distance = mean(takeoff_distance, na.rm = T)
-  )%>%
-  filter(dunks>=30)
+shooters <- df %>%
+  filter(fg3a>=35)
 
 
 image_df = nba_players()
 image_df = image_df %>%
   select(idPlayer, urlPlayerHeadshot)
 
-vertical = merge(vertical, image_df, by.x = "player_id", by.y = "idPlayer")
+shooters = merge(shooters, image_df, by.x = "player_id", by.y = "idPlayer")
 
 
 gt_theme_538 <- function(data,...) {
@@ -59,6 +50,7 @@ gt_theme_538 <- function(data,...) {
       )
     )  %>% 
     tab_options(
+      table.width = px(700),
       column_labels.background.color = "white",
       table.border.top.width = px(3),
       table.border.top.color = "transparent",
@@ -69,7 +61,7 @@ gt_theme_538 <- function(data,...) {
       column_labels.border.bottom.width = px(3),
       column_labels.border.bottom.color = "black",
       data_row.padding = px(3),
-      source_notes.font.size = 12,
+      source_notes.font.size = 9,
       table.font.size = 16,
       heading.align = "left"
     ) 
@@ -78,24 +70,23 @@ gt_theme_538 <- function(data,...) {
 
 
 
-tab_538 <- vertical %>%
-  arrange((-avg_player_vertical)) %>%
+tab_538 <- shooters %>%
+  arrange((-guarded_f3g_perc)) %>%
   head(13) %>%
-  mutate(avg_player_vertical = round(avg_player_vertical, 1), 
-         avg_hang  = round(avg_hang , 2), 
-         avg_distance = round(avg_distance, 1)) %>%
-  select(urlPlayerHeadshot, player_name, dunks, avg_player_vertical, avg_hang, avg_distance) %>%
+  mutate(guarded_f3g_perc = round(guarded_f3g_perc*100, 1),
+         efg = round(efg, 1)) %>%
+  select(urlPlayerHeadshot, player_name, fg3m, fg3a, guarded_f3g_perc, efg) %>%
   gt()  %>%
   tab_spanner(
-    label = "AVERAGE DUNK STATS",
-    columns = 4:6
+    label = "STATS",
+    columns = 3:6
   ) %>% 
   tab_header(
-    title = md("**Shadeon Sharpe takes ooooooff!**"),
-    subtitle = md("Players with 30 or more dunks, NBA 2024-25")
+    title = md("**Guarding Them Doesn't Matter**"),
+    subtitle = md("Players with ≥35 Tightly or Very Tightly Guarded 3PA")
   ) %>% 
   data_color(
-    columns = vars(avg_player_vertical),
+    columns = vars(guarded_f3g_perc),
     colors = scales::col_numeric(
       palette = c("white", "#cc0000"),
       domain = NULL
@@ -104,10 +95,10 @@ tab_538 <- vertical %>%
   cols_label(
     urlPlayerHeadshot = '', 
     player_name = '',
-    dunks = 'DUNKS', 
-    avg_player_vertical = 'VERTICAL (IN)', 
-    avg_hang = 'HANG TIME (SEC)', 
-    avg_distance = 'TAKE-OFF DISTANCE (FT)'
+    fg3a = '3PTA', 
+    fg3m = '3PTM', 
+    guarded_f3g_perc = '3PT %', 
+    efg = 'eFG%'
   ) %>% 
   tab_source_note(
     source_note = md("SOURCE: NBA.COM - TABLE: @ED_VERGANI - REF: @THOMAS_MOCK")
@@ -118,9 +109,9 @@ tab_538 <- vertical %>%
       web_image(url = x, height = 35)
     }
   ) %>%
-  gt_theme_538(table.width = px(800))
+  gt_theme_538(table.width = px(1200))
 
-gtsave(tab_538, filename = "outputs/Dunks.png")
+gtsave(tab_538, filename = "outputs/guarded_shooting.png")
 
 
 passer <- dunks %>%
@@ -265,7 +256,7 @@ scores = merge(scores, image_df, by.x = "player_id", by.y = "idPlayer")
 
 scores_table <- scores %>%
   arrange((-dunk_score)) %>%
-  head(12) %>%
+  head(13) %>%
   mutate(dunk_score = round(dunk_score, 1), 
          jump_subscore  = round(jump_subscore , 1), 
          power_subscore = round(power_subscore, 1),
